@@ -101,7 +101,7 @@ fn check_win(grid: &Vec<Vec<Option<bool>>>) -> bool {
                 }
             }
         }
-        if winning == 3 {
+        if winning == 3 || winning == -3 {
             return true;
         }
     }
