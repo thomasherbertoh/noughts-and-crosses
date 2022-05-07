@@ -1,14 +1,16 @@
 use eframe::Frame;
-use egui::{warn_if_debug_build, CentralPanel, Context, Event, Grid, Key, Label, Sense, Visuals};
+use egui::{warn_if_debug_build, CentralPanel, Context, Grid, Label, Sense, Visuals};
 
 pub struct NoughtsAndCrosses {
     grid: Vec<Vec<Option<bool>>>,
+    next_move: bool,
 }
 
 impl Default for NoughtsAndCrosses {
     fn default() -> Self {
         Self {
             grid: vec![vec![None; 3]; 3],
+            next_move: true,
         }
     }
 }
@@ -18,6 +20,10 @@ impl eframe::App for NoughtsAndCrosses {
         ctx.set_visuals(Visuals::dark());
         CentralPanel::default().show(ctx, |ui| {
             ui.heading("noughts and crosses :)");
+            ui.label(format!(
+                "Next player: {}",
+                if self.next_move { 'X' } else { 'O' }
+            ));
             Grid::new("noughts_and_crosses_grid")
                 .striped(true)
                 .show(ui, |ui| {
@@ -34,45 +40,18 @@ impl eframe::App for NoughtsAndCrosses {
                                 .clicked()
                             {
                                 println!("clicked cell at ({}, {})", i, j);
-                                let events = ui.input().events.clone();
-                                let mut user_move = None;
-                                for event in events {
-                                    match event {
-                                        Event::Key {
-                                            key: Key::X,
-                                            pressed: true,
-                                            modifiers: _,
-                                        } => {
-                                            println!("pressed x");
-                                            user_move = Some(true);
+                                match insert_value(&mut self.grid, i, j, self.next_move) {
+                                    Ok(_) => {
+                                        if check_win(&self.grid) {
+                                            println!("win :)");
+                                            frame.quit();
                                         }
-                                        Event::Key {
-                                            key: Key::O,
-                                            pressed: true,
-                                            modifiers: _,
-                                        } => {
-                                            println!("pressed o");
-                                            user_move = Some(false);
-                                        }
-                                        _ => {}
+                                        self.next_move = !self.next_move;
                                     }
-                                }
-                                match user_move {
-                                    Some(um) => match insert_value(&mut self.grid, i, j, um) {
-                                        Ok(_) => {
-                                            if check_win(&self.grid) {
-                                                println!("win");
-                                                frame.quit();
-                                            }
-                                        }
-                                        Err(e) => {
-                                            eprintln!(
-                                                "Error encountered: `({}, {}) => {}`: '{}'",
-                                                i, j, true, e
-                                            )
-                                        }
-                                    },
-                                    None => {}
+                                    Err(e) => eprintln!(
+                                        "An error occurred: ({}, {}) => {}: {}",
+                                        i, j, self.next_move, e
+                                    ),
                                 }
                             }
                         }
